@@ -1,1 +1,11 @@
 rootProject.name = 'kuke-board'
+
+include 'common'
+include 'service'
+include(
+    'service:article',
+    'service:hot-article',
+    'service:comment',
+    'service:view',
+    'service:like',
+    'service:article-read')
