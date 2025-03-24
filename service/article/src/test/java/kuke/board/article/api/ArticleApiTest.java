@@ -1,16 +1,19 @@
 package kuke.board.article.api;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import kuke.board.article.service.response.ArticlePageResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
 
 public class ArticleApiTest {
     RestClient restClient = RestClient.create("http://localhost:9000");
 
     @Test
-    public void create() {
+    public void createTest() {
         ArticleResponse response = create(new ArticleCreateRequest("title", "content", 1L, 1L));
         System.out.println(response);
     }
@@ -24,7 +27,7 @@ public class ArticleApiTest {
     }
 
     @Test
-    public void read() {
+    public void readTest() {
         ArticleResponse response = read(162135537400926208L);
         System.out.println(response);
     }
@@ -37,7 +40,7 @@ public class ArticleApiTest {
     }
 
     @Test
-    public void update() {
+    public void updateTest() {
         ArticleResponse response = update(162135537400926208L, new ArticleUpdateRequest("title2", "content2"));
         System.out.println(response);
     }
@@ -51,7 +54,7 @@ public class ArticleApiTest {
     }
 
     @Test
-    public void delete() {
+    public void deleteTest() {
         delete(162135537400926208L);
     }
 
@@ -59,6 +62,45 @@ public class ArticleApiTest {
         restClient.delete()
             .uri("/v1/articles/" + articleId)
             .retrieve();
+    }
+
+    @Test
+    public void readAllTest() {
+        ArticlePageResponse response = readAll();
+        System.out.println(response.getArticleCount());
+        response.getArticles().forEach(System.out::println);
+    }
+
+    ArticlePageResponse readAll() {
+        return restClient.get()
+            .uri("/v1/articles?boardId=1&pageSize=30&page=50000")
+            .retrieve()
+            .body(ArticlePageResponse.class);
+    }
+
+    @Test
+    public void readAllInfiniteTest() {
+        List<ArticleResponse> response = readAllInfinite();
+        response.forEach(System.out::println);
+
+        System.out.println("lastArticleId: " + response.getLast().getArticleId());
+
+        List<ArticleResponse> response2 = readAllInfiniteLast(response.getLast().getArticleId());
+        response2.forEach(System.out::println);
+    }
+
+    List<ArticleResponse> readAllInfinite() {
+        return restClient.get()
+            .uri("/v1/articles/infinite-scroll?boardId=1&pageSize=5")
+            .retrieve()
+            .body(new ParameterizedTypeReference<List<ArticleResponse>>() {});
+    }
+
+    List<ArticleResponse> readAllInfiniteLast(Long lastArticleId) {
+        return restClient.get()
+            .uri("/v1/articles/infinite-scroll?boardId=1&pageSize=5&lastArticleId=%s".formatted(lastArticleId))
+            .retrieve()
+            .body(new ParameterizedTypeReference<List<ArticleResponse>>() {});
     }
 
     @Getter
