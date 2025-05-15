@@ -28,7 +28,9 @@ public class ArticleApiTest {
 
     @Test
     public void readTest() {
-        ArticleResponse response = read(162135537400926208L);
+        ArticleResponse article = create(new ArticleCreateRequest("title", "content", 1L, 1L));
+
+        ArticleResponse response = read(article.getArticleId());
         System.out.println(response);
     }
 
@@ -41,7 +43,9 @@ public class ArticleApiTest {
 
     @Test
     public void updateTest() {
-        ArticleResponse response = update(162135537400926208L, new ArticleUpdateRequest("title2", "content2"));
+        ArticleResponse article = create(new ArticleCreateRequest("title", "content", 1L, 1L));
+
+        ArticleResponse response = update(article.getArticleId(), new ArticleUpdateRequest("title2", "content2"));
         System.out.println(response);
     }
 
@@ -55,7 +59,9 @@ public class ArticleApiTest {
 
     @Test
     public void deleteTest() {
-        delete(162135537400926208L);
+        create(new ArticleCreateRequest("title", "content", 1L, 1L));
+
+        delete(1L);
     }
 
     void delete(Long articleId) {
@@ -66,6 +72,8 @@ public class ArticleApiTest {
 
     @Test
     public void readAllTest() {
+        create(new ArticleCreateRequest("title", "content", 1L, 1L));
+
         ArticlePageResponse response = readAll();
         System.out.println(response.getArticleCount());
         response.getArticles().forEach(System.out::println);
@@ -80,6 +88,8 @@ public class ArticleApiTest {
 
     @Test
     public void readAllInfiniteTest() {
+        create(new ArticleCreateRequest("title", "content", 1L, 1L));
+
         List<ArticleResponse> response = readAllInfinite();
         response.forEach(System.out::println);
 
@@ -101,6 +111,29 @@ public class ArticleApiTest {
             .uri("/v1/articles/infinite-scroll?boardId=1&pageSize=5&lastArticleId=%s".formatted(lastArticleId))
             .retrieve()
             .body(new ParameterizedTypeReference<List<ArticleResponse>>() {});
+    }
+
+    @Test
+    public void countTest() {
+        ArticleResponse article = create(new ArticleCreateRequest("title", "content", 1L, 1L));
+
+        Long response = restClient.get()
+            .uri("/v1/articles/boards/{boardId}/count",article.getBoardId())
+            .retrieve()
+            .body(Long.class);
+        System.out.println("count: " + response);
+
+        restClient.delete()
+            .uri("/v1/articles/" + article.getArticleId())
+            .retrieve()
+            .body(Long.class);
+
+        Long count2 = restClient.get()
+            .uri("/v1/articles/boards/{boardId}/count",1L)
+            .retrieve()
+            .body(Long.class);
+
+        System.out.println("count: " + count2);
     }
 
     @Getter

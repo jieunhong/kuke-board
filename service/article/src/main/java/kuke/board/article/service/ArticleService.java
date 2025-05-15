@@ -4,7 +4,9 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import kuke.board.article.entity.Article;
+import kuke.board.article.entity.BoardArticleCount;
 import kuke.board.article.repository.ArticleRepository;
+import kuke.board.article.repository.BoardArticleCountRepository;
 import kuke.board.article.service.request.ArticleCreateRequest;
 import kuke.board.article.service.request.ArticleUpdateRequest;
 import kuke.board.article.service.response.ArticlePageResponse;
@@ -20,6 +22,7 @@ public class ArticleService {
 
     private final Snowflake snowflake = new Snowflake();
     private final ArticleRepository articleRepository;
+    private final BoardArticleCountRepository boardArticleCountRepository;
 
     @Transactional
     public ArticleResponse create(ArticleCreateRequest articleCreateRequest) {
@@ -30,6 +33,11 @@ public class ArticleService {
             articleCreateRequest.getBoardId(),
             articleCreateRequest.getWriterId());
         articleRepository.save(article);
+        int result = boardArticleCountRepository.increase(articleCreateRequest.getBoardId());
+        if (result == 0) {
+            boardArticleCountRepository.save(
+                BoardArticleCount.init(articleCreateRequest.getBoardId(), 1L));
+        }
         return ArticleResponse.from(article);
     }
 
@@ -45,6 +53,7 @@ public class ArticleService {
     public void delete(Long articleId) {
         Article article = articleRepository.findById(articleId).orElseThrow();
         articleRepository.delete(article);
+        boardArticleCountRepository.decrease(article.getBoardId());
     }
 
     @Transactional
@@ -73,4 +82,9 @@ public class ArticleService {
         return articles.stream().map(ArticleResponse::from).toList();
     }
 
+    public Long count(Long boardId) {
+        return boardArticleCountRepository.findById(boardId)
+            .map(BoardArticleCount::getArticleCount)
+            .orElse(0L);
+    }
 }
