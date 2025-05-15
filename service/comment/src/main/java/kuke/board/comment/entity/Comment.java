@@ -41,7 +41,7 @@ public class Comment {
     }
 
     public boolean isRoot() {
-        return parentCommentId == commentId;
+        return parentCommentId.longValue() == commentId.longValue();
     }
 
     public void delete() {

@@ -37,8 +37,9 @@ public class CommentApiTest {
 
     @Test
     void read() {
+        CommentResponse comment = createComment(new CommentCreateRequest(1L, "my comment1", null, 1L));
         CommentResponse response = restClient.get()
-                .uri("/v1/comments/{commentId}", 123694721668214784L)
+                .uri("/v1/comments/{commentId}", comment.getCommentId())
                 .retrieve()
                 .body(CommentResponse.class);
 
@@ -51,13 +52,40 @@ public class CommentApiTest {
         //          commentId=123694721986981888 - x
         //          commentId=123694722045702144 - x
 
+        CommentResponse comment = createComment(new CommentCreateRequest(1L, "my comment1", null, 1L));
+
         restClient.delete()
-                .uri("/v1/comments/{commentId}", 123694722045702144L)
+                .uri("/v1/comments/{commentId}", comment.getCommentId())
                 .retrieve();
     }
 
     @Test
+    void count() {
+        CommentResponse comment = createComment(new CommentCreateRequest(1L, "my comment1", null, 1L));
+
+        Long count1 = restClient.get()
+            .uri("/v1/comments/articles/{articleId}/count", 1L)
+            .retrieve()
+            .body(Long.class);
+        System.out.println("count = " + count1);
+
+        restClient.delete()
+            .uri("/v1/comments/{commentId}", comment.getCommentId())
+            .retrieve();
+
+        Long count2 = restClient.get()
+                .uri("/v1/comments/articles/{articleId}/count", 1L)
+                .retrieve()
+                .body(Long.class);
+
+        System.out.println("count = " + count2);
+    }
+
+    @Test
     void readAll() {
+        CommentResponse comments = createComment(new CommentCreateRequest(1L, "my comment1", null
+            , 1L));
+
         CommentPageResponse response = restClient.get()
                 .uri("/v1/comments?articleId=1&page=1&pageSize=10")
                 .retrieve()

@@ -27,6 +27,12 @@ public class CommentController {
                                ) {
         return commentService.read(commentId);
     }
+    @GetMapping("/articles/{articleId}/count")
+    public Long count(
+        @PathVariable("articleId") Long articleId
+                               ) {
+        return commentService.count(articleId);
+    }
 
     @PostMapping("")
     public CommentResponse create(@RequestBody CommentCreateRequest request) {

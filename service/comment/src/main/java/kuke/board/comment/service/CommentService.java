@@ -4,7 +4,9 @@ import static java.util.function.Predicate.not;
 
 import jakarta.transaction.Transactional;
 import java.util.List;
+import kuke.board.comment.entity.ArticleCommentCount;
 import kuke.board.comment.entity.Comment;
+import kuke.board.comment.repository.ArticleCommentCountRepository;
 import kuke.board.comment.repository.CommentRepository;
 import kuke.board.comment.service.request.CommentCreateRequest;
 import kuke.board.comment.service.response.CommentPageResponse;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class CommentService {
     private final Snowflake snowflake = new Snowflake();
     private final CommentRepository commentRepository;
+    private final ArticleCommentCountRepository articleCommentCountRepository;
 
     @Transactional
     public CommentResponse create(CommentCreateRequest request) {
@@ -26,9 +29,16 @@ public class CommentService {
             Comment.create(
                 snowflake.nextId(),
                 request.getContent(),
-                parent == null ? null : parent.getCommentId(),
                 request.getArticleId(),
+                parent == null ? null : parent.getCommentId(),
                 request.getWriterId()));
+
+        int result = articleCommentCountRepository.increase(comment.getArticleId());
+        if (result == 0) {
+            articleCommentCountRepository.save(
+                ArticleCommentCount.init(request.getArticleId(), 1L));
+        }
+
         return CommentResponse.from(comment);
     }
 
@@ -60,6 +70,13 @@ public class CommentService {
                     delete(comment);
                 }
             });
+
+    }
+
+    public Long count(Long articleId) {
+        return articleCommentCountRepository.findById(articleId)
+            .map(ArticleCommentCount::getCommentCount)
+            .orElse(0L);
     }
 
     private boolean hasChildren(Comment comment) {
@@ -74,6 +91,7 @@ public class CommentService {
                 .filter(not(this::hasChildren))
                 .ifPresent(this::delete);
         }
+        articleCommentCountRepository.decrease(comment.getArticleId());
     }
 
     public CommentPageResponse readAll(Long articleId, Long page, Long pageSize) {
